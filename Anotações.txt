@@ -1,0 +1,902 @@
+Contrução de um back-end (Aula 01)
+
+Através do NODE(instalação atráves de terminal.)
+ - Express -> framework para configurar o back-end.
+ - Prisma -> Vai ser a comunicação com o banco de dados criado.
+ - TypeScript(Substituir pelo JavaScript e utilizar o PropType).
+
+Na pasta criada inicial o yarn/npm para ter o package.json
+
+	=> yarn init -y
+
+Inicial o Visual Studio Code no terminal.
+
+	=> code .
+Instalação das dependências
+
+-> Express
+
+	=> yarn add express || npm install express
+
+-> Servidor e typeScript -> Verificar com JavaScript essa linha
+
+	=> yarn add -D @types/express typescript ts-node-dev
+
+
+Criação da pasta'src'
+ Inico do 'app.ts' || 'app.js'
+
+-> No terminal para dar inicio as configuarações typeScript
+	
+	=>yarn tsc --init
+
+-> No arquivo 'tsconfig.json', deixar o 'strict' em false(manter ele em true,caso use o Js, para avisar sobre erros de variaveis não utilizadas)
+
+-> No 'target' colocar o 'es2017'
+
+-> Em Js, definir o 'type' no package.json, para 'module', para executar o servidor.
+
+=> Mexer no arquivo do app.JS || app.Ts
+
+Importação do express.
+Fazer a const, e com o arquivo criado.
+
+chamar o '.listen()', colocando a porta que vai rodar o servidor com uma inrrow function, e um console.log se está tudo correto.
+
+-> No package.json, criar o 'script' para rodar a aplicação
+	"dev" : "ts-node-dev src/app.ts"
+
+Para rodar o servidor node em JS
+
+	=> node 'nome que escolhi no script'
+
+-----------------------------------------------
+
+Instalação do Prisma
+
+	-> Prisma.io
+Verificar a documentação.
+Posso baixar um projeto com todas as depedências do prisma, ou adicionar a um projeto existente.
+
+Seguir a instalação do prisma na documentação.
+
+	=> yarn prisma init (cria alguns arquivos,chamando a própria biblioteca na documentação)
+
+=> Arquivo '.env'
+
+	Criado um banco de dados SQL, que vai ser utilizado como o banco de dados.
+Utilização do SQLite -> não tem um data_base por padrão 
+
+Posso remover tudo desse arquivo.
+
+=> Shema.prisma
+	Toda configuração de banco de dados, tabela, é colocado nesse arquivo.
+
+Copiar na documentação a forma do SQLite, de como tem que ser o arquivo Shema.
+
+SQLite, não aconselhável em produção.
+
+---------------------------------------------------------------
+
+Configurar GithubOAuth -> no opções developerts,(OAtuth Apps)
+
+Usuario ter autenticação para acessar o gitHub como Login.
+
+Fazer as configurações do GitHub
+
+=> HomepageURL -> Minha página de URL da aplicação,onde está rodando.
+
+	=>http://localhost:4000
+
+=> Authorization callback URL -> enviar para alguma URL dentro da aplicação, é aqui que defino.
+
+	http://localhost:4000/signin/callback
+
+Dessa forma cria a estrutura, e tenho que gerar o 'Generate a new client secret'
+
+Copiar a chave, quando der o reload, vai ser oculta.
+
+=> Pasta de .env, colocar as duas chaves
+
+	GITHUB_CLIENT_SECRETE = chave que gerei no generate
+	GITHUB_CLIENT_ID = chave que foi criada quando fiz as configurações.
+
+---------------------------------------------------------------------------------
+Rota de LOGIN do GitHub
+
+Simulação para autenticação do usuario, no 'app.js'
+
+ Realizar a promise, utilizando o '.get' na const criada,e colocar o nome da rota da aplicação ("/github")
+ O 'response', vai redirecionar a página (redirect), colocando a seguinte URL
+Utilizando o '``', para combinar com variáveis e passando o arquivo do 'env', para primeira autenticação.
+
+
+ => `https://github.com/login/oauth/authorize?client_id=${process.env.GITHUB_CLIENT_ID}`)
+
+Instalação da dependencia para o acesso ao 'env' e usar o 'process.env'
+
+	=> yarn add dotenv
+
+E fazer a importação do arquivo.
+
+	import "dotenv/config"
+
+Na Web, colocar o localhost/4000/github -> para verificar se deu certo.
+
+-------------------------------------------------------------------------------
+Fazer a URL de Callback - Rota Criada no GitHub, de autorização.
+ Novamente fazer uma promisse.
+
+Com o código, que o gitHub forneceu na página,vou fazer a desestruturar para acessar o código.
+E posso retornar com um JSON, para ver ele na página, e no gitHub, consigo verificar quantos acessos teve a página.
+
+Na promisse, desestruturar, o code e com o 'request', fazer a solicitação e return com o 'response'
+	const {code} = request.query
+        return response.json(code)
+
+
+---------------------------------------------------------------------------------------
+Autenticação do usuário recendo o código que o GitHub forneceu
+
+Criação da pasta 'service', regra de negócio, colocar nessa pasta.
+
+=> arquivo AuthenticateUserService
+
+	class AuthenticateUserService{
+	recebe uma função assincrona 'execute()'
+1º parâmetro é o 'code' que tem que receber uma 'string'(Ts, ja vem descrito, no JS, fazer o prop)
+
+}
+
+export {AuthenticateUserService}
+
+Criação da pasta 'controllers', controlar as chamadas 
+
+=> arquivo AuthenticateUserController
+
+import {Request,Response} from 'express'
+para a função ter acesso e ser tipida.
+
+	class AuthenticateUserController{
+	função assincrona 'handle()'
+1º parametro -> request:Request ** Tipagem com o express
+2º parametro -> response: Response ** Tipagem com o express
+
+Para ter acesso aos arquivos do express.
+
+fazer a const da camada de 'service' = instanciando o 'new' e com a aplicação de Service.
+chamo a const, com o 'execute' do service, que vai me mostrar que tipo de resposta estou esperando.
+nesse caso é uma 'string'
+Depois comenta essa linha.
+//service.execute()
+}
+
+export {AuthenticateUserController}
+
+** Instalação do PropTypes para JS **
+npm install prop-types --save
+Import PropTypes from 'prop-types'
+
+Fazer a importação embaixo
+
+NomeDoArquivo.propTypes ={
+nomedapropriedade = PropTypes.string||number||boolean
+}
+------------------------------------------------------------------------------------------------
+Criando regra de negocios na pasta Service.
+
+=> arquivo AuthenticateUserService
+
+1 - Receber code(string)(vem do front||mobile)
+2 - Recuperar o access_token no github(aqui o github que informa o token)
+3-  Verificar se o usuario existe no Bando de Dados
+** ----Sim = Gera um token
+** ----Não = Cria no bando de dados, gera um token
+4 - Retornar o token com as infos do user
+
+Instalação da dependencias.
+
+	=> yarn add axios(para fazer a chamada com o gitHub)
+E as dependencias do Types de desenvolvimento.
+
+	=> yarn add @types/axios -D
+
+Fazer o import do axios no 'service'
+
+Criação da const, com a url de acesso.
+
+	"https://github.com/login/oauth/access_token"
+
+Fazer a const do 'response' e incluindo o 'await' com o 'axios' para executar os parametros.
+
+.post(passando a url e null e passando os params:
+
+{
+client_id: process.env.Nome da variavel de ID,
+client_secret: process.env.Nome da variavel secreta,
+code
+},
+headers:{
+"Accept": "application/json"
+}
+
+E quando estiver tudo certo com a chamada do axios.
+
+	=>  return response.data
+
+Toda a informação vai ser passada no 'data', vindo do axios.
+
+
+=> arquivo AuthenticateUserController
+
+Fazer o const result = com o 'await' e chamando o service.execute()
+
+desestruturar o 'code', requisitando o body e passando com parametro no 'execute'
+
+e retornar o response.json(passando o result)
+
+---------------------------------------------------------------------------------------
+- Criação do arquivo 'routes.ts', onde vai todas as rotas da aplicação.
+
+Importação do {Router} do express. e exportação da const.
+
+Fazer a const router, invocando o router
+
+chamar no router o 'post()'- passando com paramentro uma url, e declarando a o controller
+como foi criando via 'post', não da para fazer o teste pelo browser, só recebe requisições via 'get'
+
+'/authenticate', new funçãoController.handle
+
+** handle é o método que recebe request.response, utilizando dentro da rota funciona com o middle,sem a necessidade de passar os parâmetros(request e response)
+
+=> arquivo app.ts
+
+importar o router dentro da pasta.
+
+e usar o app.use(passando as rotas.) 
+
+- Fazer o teste pelo Insomnia.
+
+Configuração do insomina, base Environment.
+{
+"baseURL": "http://localhost:4000"
+}
+
+Criar um new request. chamado Authenticate User
+E selecionar o tipo.
+
+passar o base URL criado.que foi o arquivo com o localhost
+
+__.baseURL/authenticate
+
+URL que criei no arquivo de rota com o post.
+
+Passar o bare em JSON, com o 'code' que o github gerou.
+
+** express não aceita requisições via JSON **
+
+=> arquivo app.ts
+ Antes de qualquer rota, passar o 
+	app.use(express.json())
+para o express entender arquivos JSON.
+
+** atualizar o codigo(caso expire o codigo)** -> chamar novamente o github
+
+No Insomnia vai gerar o accessToken, para colocar na aplicação.
+
+---------------------------------------------------------------------
+
+Inserindo o tokken na aplicação gerado pelo insomnia
+
+- Instalação da depedência 
+
+	=> yarn add jsonwebtoken
+
+Vai ajudar a criar o token que é tipo 'TWT'
+
+- Instalação das tipagem do token
+
+	=> yarn add @types/jsonwebtoken -D
+
+=> arquivo UserService
+
+criarção de uma interface para o token, pegar somente o que precisa,de dentro do insomina
+
+interface IAccessTokenResponse{
+access_token:string
+}
+
+ No axios, consigo definir que tipo de resposta eu quero baseado na interface que criei
+.post<nome da interface>
+
+desestruturar o data: accessTokenResponse, e colocar o 'data.' => retornar as informações que quero.
+Para quando retomar as informações do data, ele ir com o nome accessTokenResponse.
+
+** Recuperar infos do user no github **
+
+criar um response, passando o await axios, com a busca '.get'
+ - passando a URL do github, api 
+ "https://api.github.com/user",
+
+ passando como segundo parâmetros o 'headers', em forma de objeto,com as 'authorization',e o nome do token em ` Bearer ${passando o accessTokenResponse.access_token}`
+
+ Se acesso estiver válido retornar as informações.
+
+ ** erro de autenticação, 401 ** 
+ Gerar um novo código no github
+
+ Com isso vai retornar todas as informações para o insomina.
+-----------------------------------------------------
+Filtar as informações da api do github
+
+Criação de outra interface
+IUserResponse{
+	avatar_url:string, -> pegar a foto do github
+	login:string, -> pegar o e-mail do github
+	id:number, -> pegar o id, para identifar no github
+	name:string -> pegar o nome do github
+}
+
+Passo o tipo de retorno no get<nome da interface que coloquei!> do axios
+
+-------------------------------------------------------------------------------------
+Integração com o Prisma, informações do GitHub.
+
+=> arquivo Prisma.
+
+criação de um model.
+
+model User{
+	id            String @id @default(uuid())
+	name           String
+	github_id      Int 
+	avatar_url     String
+	login          String
+
+	definir o nome da tabela que o model User vai ter,
+
+	@@map("users")
+}
+
+No terminal
+
+yarn prisma migrate dev 
+
+- vai solicitar para dar um nome para migrate.
+
+create-user
+
+** migrate - historico de tudo que esta sendo realizado dentro do banco de dados.
+Estrutura criada no prisma.
+
+De acordo com as modificações que faço no model, ele vai criando as migrations,com as modificações.
+-------------------------------------------------------------------------------------
+Consulta se o Usuario exite no banco de dados ou não.
+
+=> Arquivo UserService
+
+desestruturar o response.data
+
+e colocar todas as informações que coloquei do github, para aparecer.
+
+=> Criar a pasta prisma no src, e um index.ts
+
+Import {PrismaClient} from '@prisma/client"
+
+definir a const  prismaClient = instaciar com o new o PrismaClient
+
+e fazer o export do prismaClient
+
+=> Arquivo UserService
+
+importar o prismaClient
+
+fazer o let user = com o prismaClient.(fornece varias opções dentro + o modulo que foi criado por nos)
+
+await prismaClient.user.findFirts({
+	where:{
+		github_id:id
+	}
+})
+
+if(!user){
+	user = await prismaClient.user.create({
+		data:{
+			github_id:id,
+			login,
+			avatar_url,
+			name,
+		}
+	})
+}
+
+return response.data
+
+o findFirts, está passando se o usuario ja existe, e buscando o id dele.
+e o if, caso o usuario não existe, retornar criando as informações com o  modelo que forneci no prisma. e se quiser colocar alguma informação opcional, uso o '?'
+Foi criado com 'let' para poder ser usada a mesma variavel na criação do usuario.
+
+- Criação do Token.
+
+import {sign } from jsonwebtoken
+para pode se autenticar na aplicação.
+
+const token = sign(
+	{
+		user:{
+			name:user.name,
+			avatar_url:user.avatar_url,
+			id:user.id
+		}
+	},
+	process.env.JWT_SECRET,
+	{
+		subject:user.id,
+		expireIn:"1d"
+	}
+	)
+
+Utilizar o site 'md5 generator' - para ser gerado um hash.(para segurança)
+E coloco dentro do .env 
+
+JWT_SECRET = numero gerado aleatorio.
+
+Criação do token, passei a função sing, e coloquei as informações do users, sobre como criar um acesso com o token,
+
+Para segurança gerei um numero aleatorio para ser a palavra secreta.
+E o subject é o id do usuario, + o expireId, de validação, nesse caso 1 dia.
+
+-------------------------------------------------------------------------------------------
+
+ Return o {token, user} - no antigo response.data.
+
+ Testar o servidor aqui depois dessas informações
+
+Tratar o erro 401
+
+=> Arquivo UserController
+
+Tratando o const result com um try e cath
+
+try => vai estar o resultado de antes.
+cath => return o response.json(err.message)
+
+para eu visualizar a mensagem de erro 401
+Vai retornar o erro, no insomnia o console com o erro.
+
+=> Config no package.json
+
+no script do 'dev', para quando houver alteração na aplicação o arquivo rodar, não ficar parado na antiga com o servidor logado.
+
+	=> --exit-child
+
+** no schema.prima, no model para colocar opcional, bastea colocar o ? depois do tipo **
+	String?
+Sempre que alterar um model, rodar novamente o yarn prisma migrate dev.
+
+-------------------------------------------------------------------------------------------------
+ Cadastro de Mensagem.
+
+ => Pasta Service, novo arquivo
+
+	=> CreateMessageService
+
+Fazer a classe e execute com o async.
+
+	async execute(recebe duas informações, o text,que quero salvar no banco de dados, user_id,qual usuario que esta enviando as mensagens.)
+
+Para salvar no banco de dados, é necessário ter a tabela.(criar no schema prisma) 
+
+ => arquivo schema prisma.
+ 
+ model Message{
+ id String @id @default(uuid())
+ text String
+ created_at DateTime @default(now())
+
+ user User
+
+ @@map("messages"
+}
+ ** ao salvar é para ter o autocomplete senão escrever o seguinte código.**
+
+model User
+
+messages Message[]
+
+model Message
+
+user User @relation(fields: [user_id],references:[id])
+
+@@map("messages")
+user_id String
+
+rodar novamente a migrate
+
+create-messages
+
+=> CreateMessageService
+
+ importar o prismaClient
+
+ Na class, criar a const da message, e prismaClient.message.create({
+	passando o 
+data:{
+text,
+user_id
+},
+include:{
+user: true
+
+Quando salvar a messagem no banco de dados, e quando solicitar a requisição, quero que informe todas as informações do usuário.
+Essa informação vou utilizar o 'include', para receber todo o Login do usuário.
+
+
+Depois aplicar o       para aplicar a mensagem.
+
+
+	return message
+
+=> CreateMessageController
+
+Criação do arquivo de controle das mensagens(copiar do controller do usuario e realizar alterações)
+(Fazer a importação do request, response do express)
+
+ Criação da const {message} , requerindo pelo o .body
+
+Receber o id do usuario, necessário estar autenticado para receber a mensagem e enviar mensagem.
+
+=> Nova pasta, middleware
+
+ => Arquivo ensureAuthenticated
+
+import de dentro do express -> {Request, Response,NextFunction}
+
+Criar a função exportar direto ela, ensureAuthenticated(passando os parâmetros importando do express, e tipando os mesmos, request,response, next)
+
+ O middleware, funciona se o usuario,não estiver autenticado ou inválido o token, quero retornar um erro, se o usuario estiver autenticado, quero que continue o processo.
+
+Por isso do uso do 'next' -> para avançar se estiver correto.
+
+Primeira informação a buscar o token.
+
+	const authToken = request.headers.authorization
+
+E fazer a validação caso o token é invalído.
+	
+	if(!authToken{
+	return response.status(401).json({
+	errorCode: "token.invalido",
+
+Quem fizer a requisição, consegue verificar por que deu o 401, e consegue fazer a tratativa.
+
+ Se o token estiver preenchido, fazer a verificar para ver se passa a diante.
+
+Composição do token: `Bearer numeroAleatorioGeradoNoInsomida`
+1º Posição[0] = uso a virgula, para a solicitação, para ignorar o 'Bearer'
+2º Posição[1] = coloco dentro da variavel, o numero do Token,separando com o split
+	
+  const [, token] = authToken.split(" ")
+
+Fazer a importação de dentro do 'jsonwebtoken' { verify}
+Para verificar se o token é valido.
+
+const {sub} = verify(token,process.env.JWT_SECRET)
+Passo o 1º parametro o token, e o segundo o numero de segurança do .env, e consigo pagar o 'sub' que é o usuario
+
+Colocar o try por volta do verify, para lançar a exceção caso o token, está expirado.
+
+catch, colocar o return com response e o status(401), passando a mensagem que token.expired
+
+Caso esteja correto, sem o erro.
+
+request.user_id = sub -> dentro do try
+
+requisição das informações do usuario, e deixando igual ao sub, para verificação se está correto.
+Resolvendo o erro do user_id, tenho que sobrescrever as tipagem do TypeScript.
+
+=> Criação de um pasta no src, @types
+
+ => Outra pasta, express (mesma estrutura do node_modules, possui uma pasta @types)
+
+ =>arquivo index.d.ts - para sobreescrever esse arquivo.
+
+ declare namespace Express{
+	export interface Request{
+user_id: string
+}
+
+
+Nome da biblioteca que vou sobreescrever, e pego a interface que vou editar, e coloco as informações para a leitura da variavel.
+
+
+ => Arquivo ensureAuthenticated
+
+Fazer a interface IPayload{
+sub:string,
+
+pois o erro, é que pode ser uma função o 'sub'.
+E coloca depois do () da verificação as IPayload
+
+e depois um 
+
+return next() -> para passar a informação para frente, dentro do try
+
+-------------------------------------------------------------------------------------------------
+Criação da rota, no arquivo 
+
+=> routes
+
+mesma ideia da Autenticação do Controller, mas com a rota.
+
+	"/messages", e no meio dos arquivos, passar o ensureAuthenticated
+Para a validadação.
+
+=> Fazer o cadastro da Mensagem no Insomida.
+
+Create Message -> Post -> Fazer a rota com o messages
+
+E em um arquivo em JSON, passar a mensagem!
+
+----------------------------------------------------------------------------------------------
+No arquivo do 
+=> tsconfig.json
+
+"typeRoots":["./src/@types","node_modules/@types"]
+
+Essas informações para aceitar a leitura dos dois types.
+Não estava reconhenco o @types, criada no src, passando assim as informações que é para reconher os dois.
+
+=> Insomida
+
+Se rodar a aplicação, da mensagem, vai aparecer o 'token.invalid', que não foi passado nenhum token.
+
+Para fazer esse teste, tenho que ir no 'Auth' e selecionar o BaredToken, e passar as informações do token que foi gerado no autenticar usuário.
+
+No JSon, escrever conforme a variavel que crie no messagemController, no caso.
+
+"message"
+
+
+
+=> Arquivo MessageController
+
+fazer a const com o {user_id}, solicitando o request.
+
+instanciar o MessageService, dentro de uma variavel para execução.
+
+variavel com o resultado, e usando o execute(passando o message criado + o id do usuario)
+
+e retornar a response em json passando o parametro do resultado.
+
+Fazer o teste no insomida.
+-----------------------------------------------------------------------------------
+Na aplicação rodar o yarn prisma studio
+
+Vai mostrar um porta, com uma estrutura de banco de dados, com todas as tabelas que tem.
+E as informações salvas.
+
+Sem se preocupar com uma IDE, para acessar os bancos de dados.
+
+ - Configuração do WebSocket(protocolo)
+
+Responsável por fazer a comunicação entre o banco de dados e o servidor.
+
+Como feita a todo momento, a comunicação,sem a necessidade de solicitar varias vezes a requisição.
+Só é fechada a requisição quando algumas das partes é desconectada.
+
+=> Instalação do socket
+
+	=> yarn add socket.io
+E a instalação das tipagem
+	=> yarn add @types/socket.io -D
+
+=> arquivo App.ts
+
+importar o {Server} de denro do socket
+importar o http do http, que vem como padrão do Node.
+
+Ao inves do app subir o servidor, agora vai ser o 'http' que vai subir o servidor, para conseguir utilizar o socket
+
+--------------------------------------------------------------------------------------------------
+=> arquivo App.ts
+
+Configurando um http para rodar a aplicação 'app'
+
+const serverHttp = http.createServer(app)
+
+Depois instanciar o new Server, passando com parametro a variavel criada com o http
+
+const io = new Server(serverHttp)
+
+
+Instalação de dependencias do cors e as tipagem em TS
+
+	=> yarn add cors
+
+	=> yarn add @types/cors -D
+
+Cors - é responsável por barrar ou permitir, necessário habilitar dentro do cors.
+----------------------------------------------------------------------------------
+
+Importar o cors na aplicação app.
+
+e iniciar o 
+
+app.use(cors())
+
+e dentro do 'io', como segundo parâmetro passar o {
+cors: {
+origin:"*" -> isso habilita qualquer origem, front-end ou mobile, se conectar com o http ou websocket
+}
+}
+
+Depois disso fazer o 
+
+io.on("connection",socket => { console.log(`Usuário conectado no socket ${socket.id}`)}) -> responsavel por escutar ou passar um evento dentro do websocket
+
+** connection, é para ouvir um evento de conexão ***
+No console está buscando o id do socket que foi conectado.
+
+=> Criação da pasta public na raiz do projeto.
+
+=> fazer um index.html -> simples só para se conectar como teste e o websocket está funcionando.
+
+Copiar link do CDN, para ter acesso(olhar no envio da aula 01), isso é para ter acesso ao Client do socket
+
+Criar um script para escutar o socket.
+
+const socket = io("http://localhost:4000")
+
+Trocar o app.listen, por serverHttp, que vai ser o responsavel por subir o servidor.
+ --------------------------------------------------------------------------------
+=> Criação de um arquivo 
+
+	=> server.ts
+
+E passar o serverHttps.listen para dentro dele.
+
+=> app.js
+
+export o {serverHttp, io}
+
+Para ser utilizado no arquivo server.ts
+
+E o 'io', vai criar um evento para quando criar uma nova mensagem, esses usuário receber e conectar.
+Será feito no arquivo 
+
+=> CreateMessageService
+
+Fazer a importarção do {io} de dentro do app
+
+Fazer a cont com as informações que vai ser criada.
+
+const infoWS ={
+	Todas as informações
+}
+
+io.emit("new_message",infoWS) -> passando tadas as informações criadas para retornar no 'io'
+
+=> O evento que vai ser escutado vai ser no front ou mobile.
+
+=> No index.html
+
+criar o  socket.on("new_message",(data) => console.log(data)) -> variável criada no service, para ficar escutando.
+Passo o data, para acessar as informaçoes da mensagem.
+
+=> Package.json 
+
+Trocar para não ouvir mais o 'app' e sim o 'server.ts' que foi criado.
+
+Fazer o teste com uma nova mensagem, no insomida.
+Assim vai mostrar no console do browser.
+
+---------------------------------------------------------------------------------------------
+
+Criação de Rota - Listagem das 3 ultimas mensagens
+
+=> Pasta Service
+	=> Arquivo GetLast3MessagesService
+
+Criação da class, passar a messages em uma variavel.
+E passar como parametro do findMany,
+
+take = 3 -> para pegar apenas essa quantidade de mensagens
+orderBy = passar a ordem que vai vir essas mensagens
+
+e include, para ter o acesso ao usuarios.
+
+e fazer o return das messages
+
+Funciona dessa maneira
+
+//SELECT * Quantidade de mensagem que vai vir, com o limite que estabeli e a ordem criada.
+---------------------------------------------------------------------------------------------
+-> Pasta Controller,
+
+=> Arquivo GetLast3MessagesController
+
+ Para constrar o service das messages.
+
+Instanciar o service, fazer o result
+
+e retornar o response.json(result)
+-----------------------------------------------------------------------------------------------
+-> Arquivo router
+
+Vai fazer a rota com o .get e passar a url que é para redirecionar, e instanciar o Controller dentro com o handle()
+
+Não vai precisar de uma autenticação.
+
+Fazer no isnomida para ver o resultado, para ver todas as mensagens.
+
+------------------------------------------------------------------------------------------------
+
+Rota do profile do usuario.
+
+=> Criação do arquivo ProfileUserService, na pasta Service
+
+no execute(vai receber o user_id)
+
+E passando o findFirst, que vai ter o where, retornando o user_id
+
+Depois retorna a variavel do usuario criada.
+
+Aqui o usuario ja vai estar autenticado então vai ter o user_id
+
+=> Criação do arquivo ProfileUserController, na pasta Controller
+
+e fazer as requisições, para pegar o id do usuario, buscando as informações do service.
+
+=> arquivo router
+
+ Fazer a rota do usuario com o .get, passando a rota, a autenticação e invocando o metodo controller 
+
+=> Insomida
+
+ Crio o Profile User, para autenticar o usuario e informações que solicitei.
+
+-------------------------------------------------------------------------------
+ => Insomida, para facilitar o acesso pelo token, fazer um novo Base Environment
+
+Quando criar o 'token', vai aparecer uma janela para ediação.
+
+Selecionar em qual linha se encontra esse token, no caso Authenticate User
+E fazer um filtro para exibir apenas o token
+
+	=> $.token
+
+Com isso ao inves de pegar o token, que gerou, pego pela variavel que criei.
+
+=================================================================================================
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
